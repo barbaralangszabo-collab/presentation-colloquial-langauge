@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colloquial English Quiz</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the font and background */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        /* Custom utility for button feedback */
+        .feedback-correct {
+            background-color: #d1fae5; /* Green 100 */
+            border-color: #10b981; /* Green 500 */
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1), 0 2px 4px -2px rgba(16, 185, 129, 0.1);
+        }
+        .feedback-incorrect {
+            background-color: #fee2e2; /* Red 100 */
+            border-color: #ef4444; /* Red 500 */
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1), 0 2px 4px -2px rgba(239, 68, 68, 0.1);
+        }
+        /* Ensure the main content card looks good on mobile */
+        #quiz-container {
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="quiz-container" class="flex flex-col items-center p-4 sm:p-8">
+        
+        <header class="w-full max-w-xl text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-gray-800">Spoken Academic English Quiz</h1>
+            <p class="mt-2 text-gray-500">Choose the best colloquial expression to complete the context.</p>
+        </header>
+
+        <div id="scoreboard" class="w-full max-w-xl p-3 bg-white rounded-lg shadow-md mb-6 flex justify-between items-center border border-indigo-200">
+            <span class="text-indigo-600 font-semibold text-lg">Question <span id="current-question-index">1</span> of <span id="total-questions"></span></span>
+            <span class="text-gray-700 font-semibold text-lg">Score: <span id="score">0</span> / <span id="total-score">0</span></span>
+        </div>
+
+        <main id="quiz-card" class="w-full max-w-xl bg-white p-6 rounded-xl shadow-2xl transition-all duration-300">
+            
+            <div id="image-container" class="w-full h-40 bg-indigo-600 rounded-xl mb-6 shadow-xl overflow-hidden flex items-center justify-center">
+                <img src="https://images.unsplash.com/photo-1543269865-cbf427524ad7?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Students collaborating and presenting in an academic setting" class="w-full h-full object-cover">
+            </div>
+            
+            <div id="question-content">
+                <p class="text-gray-500 text-center">Loading quiz...</p>
+            </div>
+        </main>
+
+        <div class="w-full max-w-xl mt-6 flex justify-center">
+            <button id="next-button" class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors duration-200 hidden" disabled>
+                Next Question
+            </button>
+        </div>
+
+        <div id="feedback-message" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-4">
+            <div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm w-full">
+                <h3 id="feedback-title" class="text-2xl font-bold mb-3"></h3>
+                <p id="feedback-text" class="text-gray-600 mb-4"></p>
+                <button onclick="hideFeedback()" class="px-4 py-2 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 transition-colors">
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Quiz Data and Variables ---
+        const QUIZ_DATA = [
+            // --- Existing Questions ---
+            {
+                id: 1,
+                title: "Getting Started 🚀",
+                scenario: "Dr. Anya is resuming her lecture on sustainable energy sources. She needs to reference the topic they covered yesterday before moving on to new material.",
+                sentence: "Good morning, everyone. Before we look at wind power generation today, let's **___________________** when we discussed solar photovoltaic cells.",
+                correctAnswer: "pick up where we left off",
+                options: [
+                    { text: "back on track", hint: "Incorrect: This implies they went off-topic." },
+                    { text: "start from scratch", hint: "Incorrect: This implies they are beginning the whole topic again." },
+                    { text: "pick up where we left off", hint: "Correct: This means to continue from the last stopping point." },
+                    { text: "flesh it out", hint: "Incorrect: This means to add more detail to something started, not to resume a topic." }
+                ]
+            },
+            {
+                id: 2,
+                title: "Coming Up Against Problems 🚧",
+                scenario: "Two students, Ben and Chloe, are discussing their challenging final-year project about climate modeling.",
+                sentence: "Chloe: 'I've tried three different algorithms, but none of them are working properly. I think we're really struggling with **___________________** using limited data.'",
+                correctAnswer: "tackling this kind of problem",
+                options: [
+                    { text: "tackling this kind of problem", hint: "Correct: This means handling or dealing with a particular issue or challenge." },
+                    { text: "running through really quickly", hint: "Incorrect: This means reviewing something fast, not struggling with an issue." },
+                    { text: "pin down the factors involved", hint: "Incorrect: Too specific; the sentence is about the *type* of problem, not just the variables." },
+                    { text: "backtrack a little", hint: "Incorrect: This means reviewing previous material." }
+                ]
+            },
+            {
+                id: 3,
+                title: "Recapitulating & Winding Down 🔚",
+                scenario: "Professor Jones is giving a summary conclusion at the end of a long presentation about historical economic factors.",
+                sentence: "So, to recap the main points we've covered today, what this all **___________________** is that technological shifts, not political changes, were the primary driver.",
+                correctAnswer: "boils down to",
+                options: [
+                    { text: "comes up again", hint: "Incorrect: This suggests the problem reappears." },
+                    { text: "fleshes it out", hint: "Incorrect: This means to add detail, not to simplify to the core point." },
+                    { text: "boils down to", hint: "Correct: This means the essence, main point, or simplified truth of a complex matter." },
+                    { text: "gives you the framework", hint: "Incorrect: A framework is the structure, not the summary/conclusion." }
+                ]
+            },
+            {
+                id: 4,
+                title: "Getting Started 🗣️",
+                scenario: "A lecturer is starting a new topic and wants to give a quick overview before diving into the details.",
+                sentence: "I want to **___________________** about the methodology, and then we'll look at the case studies.",
+                correctAnswer: "start off today by saying a few things",
+                options: [
+                    { text: "start from scratch", hint: "Incorrect: Only used if nothing has been done before." },
+                    { text: "tackle this problem", hint: "Incorrect: They are not talking about a problem yet." },
+                    { text: "get back on track", hint: "Incorrect: Implies they went off-topic." },
+                    { text: "start off today by saying a few things", hint: "Correct: A common colloquial way to introduce an upcoming discussion." }
+                ]
+            },
+            {
+                id: 5,
+                title: "Problems Reappearing 🛑",
+                scenario: "A research team thought they had solved an experimental issue last week, but it has returned.",
+                sentence: "It looks like this kind of problem has **___________________** again in the new data set.",
+                correctAnswer: "cropped up before",
+                options: [
+                    { text: "fleshed out", hint: "Incorrect: Fleshing out means adding detail." },
+                    { text: "boiled down to", hint: "Incorrect: Boiling down is summarizing." },
+                    { text: "cropped up before", hint: "Correct: 'Cropped up' means something unexpected or problematic has appeared or returned." },
+                    { text: "pin down", hint: "Incorrect: Pinning down means isolating specific factors." }
+                ]
+            },
+
+            // --- New Questions (Total 15) ---
+            {
+                id: 6,
+                title: "Adding Detail ✍️",
+                scenario: "The group has a basic outline for their presentation, but they need to add detailed content.",
+                sentence: "The introduction is okay, but now we need to **___________________** with some actual data and analysis.",
+                correctAnswer: "flesh it out",
+                options: [
+                    { text: "start from scratch", hint: "Incorrect: Implies starting over, not adding detail." },
+                    { text: "quick recap", hint: "Incorrect: Means summarizing, not elaborating." },
+                    { text: "flesh it out", hint: "Correct: This means to add substance or detail to an outline or initial idea." },
+                    { text: "pretty straightforward", hint: "Incorrect: This is a description of difficulty." }
+                ]
+            },
+            {
+                id: 7,
+                title: "Quick Review 🔄",
+                scenario: "A mentor begins a session and wants to briefly summarize what the student learned last time.",
+                sentence: "Before we move to advanced statistics, let's begin with just a **___________________** of last week's regression models.",
+                correctAnswer: "quick recap",
+                options: [
+                    { text: "tricky territory", hint: "Incorrect: This refers to a difficult area of discussion." },
+                    { text: "flesh it out", hint: "Incorrect: Means elaborating, not summarizing." },
+                    { text: "quick recap", hint: "Correct: This means a fast summary of previous points." },
+                    { text: "run through really quickly", hint: "Incorrect: This is generally used for quickly presenting new material." }
+                ]
+            },
+            {
+                id: 8,
+                title: "Speeding Up ⏱️",
+                scenario: "A presenter realizes they are running out of time and need to speed up the latter part of their slides.",
+                sentence: "I see we only have five minutes left, so I'll just **___________________** the discussion points on the next slide.",
+                correctAnswer: "run through really quickly",
+                options: [
+                    { text: "tackle this kind of problem", hint: "Incorrect: Not related to managing time or content." },
+                    { text: "pick up where we left off", hint: "Incorrect: Means resuming a topic." },
+                    { text: "run through really quickly", hint: "Correct: This means to present the remaining content at a high speed." },
+                    { text: "backtrack a little", hint: "Incorrect: Means returning to an earlier point." }
+                ]
+            },
+            {
+                id: 9,
+                title: "Difficult Subject 🤯",
+                scenario: "A discussion has moved from simple, known facts to complex, debated, or politically sensitive subjects.",
+                sentence: "Now that we've covered the basics, we're moving into some **___________________** regarding ethical funding for this research.",
+                correctAnswer: "tricky territory",
+                options: [
+                    { text: "pretty straightforward", hint: "Incorrect: The opposite of the meaning." },
+                    { text: "pretty bad job", hint: "Incorrect: Used for criticizing poor performance." },
+                    { text: "tricky territory", hint: "Correct: This means a difficult or sensitive area of discussion or research." },
+                    { text: "quick recap", hint: "Incorrect: Not related to the content's difficulty." }
+                ]
+            },
+            {
+                id: 10,
+                title: "Starting Over 🔄",
+                scenario: "A student accidentally deleted their entire bibliography and citation list, meaning they have to redo all the work.",
+                sentence: "I lost the reference file. I guess I'll have to **___________________** and recreate the list from my notes.",
+                correctAnswer: "start from scratch",
+                options: [
+                    { text: "pick up where we left off", hint: "Incorrect: This implies continuing, not beginning anew." },
+                    { text: "run through really quickly", hint: "Incorrect: This is about speed, not a fresh start." },
+                    { text: "flesh it out", hint: "Incorrect: This means adding detail to something existing." },
+                    { text: "start from scratch", hint: "Correct: This means to begin a process or task again from the very beginning." }
+                ]
+            },
+            {
+                id: 11,
+                title: "Simple Process 👍",
+                scenario: "A professor is describing a new procedure that is simpler than the students expected.",
+                sentence: "Don't worry about the instructions; the setup for the experiment seems **___________________**, much easier than last semester's lab.",
+                correctAnswer: "pretty straightforward",
+                options: [
+                    { text: "tricky territory", hint: "Incorrect: The opposite of the meaning." },
+                    { text: "pretty bad job", hint: "Incorrect: Used for criticizing poor performance." },
+                    { text: "pretty straightforward", hint: "Correct: This means simple, uncomplicated, or easy to understand/do." },
+                    { text: "tackling this kind of problem", hint: "Incorrect: This refers to dealing with an issue." }
+                ]
+            },
+            {
+                id: 12,
+                title: "Isolating Variables 🔍",
+                scenario: "A team is having trouble isolating the exact variables that are causing an inconsistent result.",
+                sentence: "It's difficult to **___________________** without more granular data, so we can't be sure what caused the error.",
+                correctAnswer: "pin down the factors involved",
+                options: [
+                    { text: "backtrack a little", hint: "Incorrect: Means returning to an earlier point." },
+                    { text: "start from scratch", hint: "Incorrect: Means starting over." },
+                    { text: "pin down the factors involved", hint: "Correct: This means to precisely identify or isolate the causes or variables." },
+                    { text: "quick recap", hint: "Incorrect: Means summarizing." }
+                ]
+            },
+            {
+                id: 13,
+                title: "Poor Performance 👎",
+                scenario: "A student is critiquing a visualization model that clearly fails to represent the actual data accurately.",
+                sentence: "When you zoom in on that section of the map, you can see the model **___________________** of predicting population density.",
+                correctAnswer: "does a pretty bad job",
+                options: [
+                    { text: "pretty straightforward", hint: "Incorrect: A description of ease, not quality." },
+                    { text: "boils down to", hint: "Incorrect: Means summarizing the essence." },
+                    { text: "does a pretty bad job", hint: "Correct: This is a colloquial way of saying something is ineffective or performs poorly." },
+                    { text: "run through really quickly", hint: "Incorrect: Not related to performance quality." }
+                ]
+            },
+            {
+                id: 14,
+                title: "Returning for Clarity ↩️",
+                scenario: "A student gets confused during a Q&A session and needs to return to an earlier point for clarity.",
+                sentence: "Wait, sorry, can we just **___________________** to the slide about the control group? I missed the key percentage.",
+                correctAnswer: "backtrack a little",
+                options: [
+                    { text: "figure out how to integrate this", hint: "Incorrect: Means solving an integration problem." },
+                    { text: "pick up where we left off", hint: "Incorrect: Means continuing from a pause." },
+                    { text: "flesh it out", hint: "Incorrect: Means adding detail." },
+                    { text: "backtrack a little", hint: "Correct: This means to return to a previous point in a discussion or presentation." }
+                ]
+            },
+            {
+                id: 15,
+                title: "Concluding the Discussion ✅",
+                scenario: "The committee chair finishes reviewing the agenda items and is satisfied the meeting is complete.",
+                sentence: "Okay, we've reviewed the budget, discussed the timeline, and approved the methodology. I think that **___________________** for this meeting.",
+                correctAnswer: "pretty much covers everything we need",
+                options: [
+                    { text: "start from scratch", hint: "Incorrect: Means starting over." },
+                    { text: "pin down the factors involved", hint: "Incorrect: Means isolating variables." },
+                    { text: "pretty much covers everything we need", hint: "Correct: This is a way to conclude a discussion, indicating completeness." },
+                    { text: "let me first recap", hint: "Incorrect: This introduces a summary, not concludes the entire meeting." }
+                ]
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        // Element references
+        const questionContent = document.getElementById('question-content');
+        const nextButton = document.getElementById('next-button');
+        const currentQuestionSpan = document.getElementById('current-question-index');
+        const totalQuestionsSpan = document.getElementById('total-questions');
+        const scoreSpan = document.getElementById('score');
+        const totalScoreSpan = document.getElementById('total-score');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackText = document.getElementById('feedback-text');
+
+        // Utility function to shuffle an array (Fisher-Yates)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[i], array[j]];
+            }
+            return array;
+        }
+
+        // --- Core Quiz Functions ---
+
+        function loadQuestion() {
+            if (currentQuestionIndex >= QUIZ_DATA.length) {
+                showResults();
+                return;
+            }
+
+            const q = QUIZ_DATA[currentQuestionIndex];
+            isAnswered = false;
+            nextButton.classList.add('hidden');
+            nextButton.disabled = true;
+
+            currentQuestionSpan.textContent = currentQuestionIndex + 1;
+            scoreSpan.textContent = score;
+
+            // Shuffle options for better replayability
+            const shuffledOptions = shuffleArray([...q.options]);
+
+            let optionsHtml = '';
+            shuffledOptions.forEach((option) => {
+                optionsHtml += `
+                    <button data-answer="${option.text}" class="option-btn w-full text-left p-4 my-2 border-2 border-gray-200 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:border-indigo-400 transition-all duration-150 focus:outline-none focus:ring-4 focus:ring-indigo-300" onclick="checkAnswer(this)">
+                        ${option.text}
+                    </button>
+                `;
+            });
+
+            questionContent.innerHTML = `
+                <div class="mb-4">
+                    <span class="inline-block text-xs font-semibold uppercase tracking-wider text-white bg-indigo-500 px-3 py-1 rounded-full">${q.title}</span>
+                </div>
+                <p class="text-sm italic text-gray-500 mb-4 border-l-4 border-gray-200 pl-3">${q.scenario}</p>
+                <p class="text-lg font-medium text-gray-800 mb-6">${q.sentence}</p>
+                <div id="options-container" class="space-y-3">
+                    ${optionsHtml}
+                </div>
+            `;
+        }
+
+        function checkAnswer(selectedButton) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const selectedAnswer = selectedButton.getAttribute('data-answer');
+            const questionData = QUIZ_DATA[currentQuestionIndex];
+            const isCorrect = selectedAnswer === questionData.correctAnswer;
+            const optionsContainer = document.getElementById('options-container');
+
+            // Find the hint corresponding to the selected answer
+            const hint = questionData.options.find(opt => opt.text === selectedAnswer)?.hint || "No hint available.";
+
+            // Disable all buttons and show feedback
+            Array.from(optionsContainer.children).forEach(btn => {
+                btn.disabled = true;
+                if (btn.getAttribute('data-answer') === questionData.correctAnswer) {
+                    btn.classList.add('feedback-correct', 'border-4', 'border-green-600', 'font-bold');
+                    btn.classList.remove('bg-gray-50', 'hover:bg-indigo-50', 'hover:border-indigo-400');
+                } else if (btn === selectedButton) {
+                    btn.classList.add('feedback-incorrect', 'border-4', 'border-red-600', 'font-bold');
+                    btn.classList.remove('bg-gray-50', 'hover:bg-indigo-50', 'hover:border-indigo-400');
+                }
+            });
+
+            if (isCorrect) {
+                score++;
+                showFeedback(true, hint);
+            } else {
+                showFeedback(false, hint);
+            }
+
+            nextButton.classList.remove('hidden');
+            nextButton.disabled = false;
+            scoreSpan.textContent = score; // Update score immediately
+        }
+
+        function showFeedback(isCorrect, hint) {
+            if (isCorrect) {
+                feedbackTitle.textContent = "✅ Correct!";
+                feedbackTitle.classList.remove('text-red-600');
+                feedbackTitle.classList.add('text-green-600');
+            } else {
+                feedbackTitle.textContent = "❌ Incorrect!";
+                feedbackTitle.classList.remove('text-green-600');
+                feedbackTitle.classList.add('text-red-600');
+            }
+            feedbackText.innerHTML = `<span class="font-semibold block mb-2">${isCorrect ? 'Great job!' : 'Keep practicing!'}</span><p class="text-sm">${hint}</p>`;
+            feedbackMessage.classList.remove('hidden');
+        }
+
+        function hideFeedback() {
+            feedbackMessage.classList.add('hidden');
+            // Auto advance to the next question if the user closes the feedback
+            if (isAnswered) {
+                nextQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            if (!isAnswered) return;
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        function showResults() {
+            questionContent.innerHTML = `
+                <div class="text-center py-10">
+                    <h2 class="text-4xl font-bold text-indigo-600 mb-4">Quiz Complete! 🎉</h2>
+                    <p class="text-xl text-gray-700 mb-6">You scored ${score} out of ${QUIZ_DATA.length}</p>
+                    <button onclick="resetQuiz()" class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition-colors duration-200">
+                        Try Again
+                    </button>
+                    <p class="mt-4 text-sm text-gray-500">You can now review the expressions!</p>
+                </div>
+            `;
+            nextButton.classList.add('hidden');
+            currentQuestionSpan.textContent = QUIZ_DATA.length; // Ensure index shows max/max
+        }
+
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            isAnswered = false;
+            loadQuestion();
+        }
+
+        // --- Initialization ---
+
+        document.addEventListener('DOMContentLoaded', function() {
+            totalQuestionsSpan.textContent = QUIZ_DATA.length;
+            totalScoreSpan.textContent = QUIZ_DATA.length;
+            loadQuestion();
+            // Attach event listener to the next button (moved here for DOM safety)
+            nextButton.addEventListener('click', nextQuestion);
+        });
+    </script>
+
+</body>
+</html>
